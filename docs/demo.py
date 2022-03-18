@@ -1,88 +1,19 @@
-py -m pip config set global.cert C:\D\Tools\Python\cpchem.crt
-
-=======
-Root CA
-=======
-import certifi
-certifi.where()
-copy root CA into C:\Users\brownjl\AppData\Roaming\Python\Python310\site-packages\certifi\cacert.pem
-
-=====================
-Azure Cache for Redis
-=====================
-py -m pip install redis
-
-docs: https://redis-py.readthedocs.io/en/stable/index.html
-
-PRIMARY
--------
-rcCacheEventing.redis.cache.windows.net:6380,password=cQM2lM2YO5zHSAkdUrJTNzqdzUuMF5TRCAzCaF16CqU=,ssl=True,abortConnect=False
-
-SECONDARY
----------
-rcCacheEventing.redis.cache.windows.net:6380,password=e59dkw16jhbaymnwaPraHDhCEru0sKTI0AzCaPAtA8A=,ssl=True,abortConnect=False
-
-import redis
-r = redis.Redis(host='rcCacheEventing.redis.cache.windows.net', port=6380, db=0, ssl=True, password='cQM2lM2YO5zHSAkdUrJTNzqdzUuMF5TRCAzCaF16CqU=', decode_responses=True)
-r.set('result','Nothing yet...')
-r.get('result')
-
-================
-Event Grid Topic
-================
-py -m pip install azure.core
-py -m pip install azure.eventgrid
-
 from azure.core.credentials import AzureKeyCredential
 from azure.eventgrid import EventGridPublisherClient, EventGridEvent
-key = 'sMtf3ieNHThwCkXJMTcl3Rb/Yo9OaUZalEj4XBLbANY='
-endpoint = 'https://egtcacheeventing.centralus-1.eventgrid.azure.net/api/events'
-credential = AzureKeyCredential(key)
-client = EventGridPublisherClient(endpoint, credential)
-services = ["EventGrid"]
-events = []
-events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:00:00.000", "site": "ppc", "extruder": "7-1", "predicted": 0.1, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0"))
-events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:05:00.000", "site": "ppc", "extruder": "7-1", "predicted": 0.2, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0"))
-events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:10:00.000", "site": "ppc", "extruder": "7-1", "predicted": 0.3, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0"))
-events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:15:00.000", "site": "ppc", "extruder": "7-1", "predicted": 0.4, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0"))
-events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:20:00.000", "site": "ppc", "extruder": "7-1", "predicted": 0.5, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0"))
-events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:25:00.000", "site": "ppc", "extruder": "7-1", "predicted": 0.6, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0"))
-events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:30:00.000", "site": "ppc", "extruder": "7-1", "predicted": 0.7, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0"))
-client.send(events)
-events.clear()
-
-===========
-Time Series
-===========      
-ticks_00_00 = 6.30822816e+17 # 2000-01-01 00:00:00.000
-ticks_00_05 = 6.30822819e+17 # 2000-01-01 00:05:00.000
-ticks_00_10 = 6.30822822e+17 # 2000-01-01 00:10:00.000
-ticks_00_15 = 6.30822825e+17 # 2000-01-01 00:15:00.000
-ticks_00_20 = 6.30822828e+17 # 2000-01-01 00:20:00.000
-ticks_00_25 = 6.30822831e+17 # 2000-01-01 00:25:00.000
-ticks_00_30 = 6.30822834e+17 # 2000-01-01 00:30:00.000
-ticks_00_35 = 6.30822837e+17 # 2000-01-01 00:35:00.000
-ticks_00_40 = 6.30822840e+17 # 2000-01-01 00:40:00.000
-ticks_00_45 = 6.30822843e+17 # 2000-01-01 00:45:00.000
-ticks_1_second = 10e6
-
-====
-Demo
-====
 import redis
-from azure.core.credentials import AzureKeyCredential
-from azure.eventgrid import EventGridPublisherClient, EventGridEvent
+import time
 
-ticks_00_00 = 6.30822816e+17 # 2000-01-01 00:00:00.000
-ticks_00_05 = 6.30822819e+17 # 2000-01-01 00:05:00.000
-ticks_00_10 = 6.30822822e+17 # 2000-01-01 00:10:00.000
-ticks_00_15 = 6.30822825e+17 # 2000-01-01 00:15:00.000
-ticks_00_20 = 6.30822828e+17 # 2000-01-01 00:20:00.000
-ticks_00_25 = 6.30822831e+17 # 2000-01-01 00:25:00.000
-ticks_00_30 = 6.30822834e+17 # 2000-01-01 00:30:00.000
-ticks_00_35 = 6.30822837e+17 # 2000-01-01 00:35:00.000
-ticks_00_40 = 6.30822840e+17 # 2000-01-01 00:40:00.000
-ticks_00_45 = 6.30822843e+17 # 2000-01-01 00:45:00.000
+# Declare time constants.
+ticks_00_00 = 6.30822816e+17 # 2000-01-01 00:00:00
+ticks_00_05 = 6.30822819e+17 # 2000-01-01 00:05:00
+ticks_00_10 = 6.30822822e+17 # 2000-01-01 00:10:00
+ticks_00_15 = 6.30822825e+17 # 2000-01-01 00:15:00
+ticks_00_20 = 6.30822828e+17 # 2000-01-01 00:20:00
+ticks_00_25 = 6.30822831e+17 # 2000-01-01 00:25:00
+ticks_00_30 = 6.30822834e+17 # 2000-01-01 00:30:00
+ticks_00_35 = 6.30822837e+17 # 2000-01-01 00:35:00
+ticks_00_40 = 6.30822840e+17 # 2000-01-01 00:40:00
+ticks_00_45 = 6.30822843e+17 # 2000-01-01 00:45:00
 ticks_1_second = 10e6
 
 # Connect to Azure Cache for Redis server.
@@ -98,9 +29,20 @@ eventGridClient = EventGridPublisherClient(endpoint, credential)
 redisClient.delete('site:ppc:extruder:7-1',1)
 redisClient.zcard('site:ppc:extruder:7-1')
 
+# ============================================================================#
+
 # Initialize the Redis Cache using Event Grid.
 events = []
-events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:00:00.000", "site": "ppc", "extruder": "7-1", "predicted": 0.1, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0"))
+events.append(EventGridEvent(subject="PoC",data={
+    "timestamp": "2000-01-01 00:00:00.000", 
+    "site": "ppc", 
+    "extruder": "7-1", 
+    "predicted": 0.5, 
+    "lcl": 0.0, 
+    "target": 0.5, 
+    "ucl": 1.0, 
+    "model": "7-1 Model", 
+    "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0"))
 events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:05:00.000", "site": "ppc", "extruder": "7-1", "predicted": 0.2, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0"))
 events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:10:00.000", "site": "ppc", "extruder": "7-1", "predicted": 0.3, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0"))
 events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:15:00.000", "site": "ppc", "extruder": "7-1", "predicted": 0.4, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0"))
@@ -110,8 +52,13 @@ events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:30:
 eventGridClient.send(events)
 events.clear()
 
+# Give the function app a second to catch up.
+time.sleep(2)
+
 # Get the cardinality of the sorted set.
 redisClient.zcard('site:ppc:extruder:7-1')
+
+# ============================================================================#
 
 # Get the first 7 elements with their scores.
 redisClient.zrange('site:ppc:extruder:7-1',0,7,withscores=True)
@@ -129,7 +76,11 @@ redisClient.zrevrangebyscore('site:ppc:extruder:7-1','+inf',ticks_00_30 + ticks_
 redisClient.zremrangebyscore('site:ppc:extruder:7-1',0,ticks_00_00)
 redisClient.zcard('site:ppc:extruder:7-1')
 
-# Add additional elements directly (not advised)
+# ============================================================================#
+
+# Add additional elements directly
+# Note: This is NOT advised due to the ease of creating even a *slightly* different member, which would create two entries for the same score/timestamp.
+#       Best left to EventGrid/Function App for single-responsibility principle.
 #redisClient.zadd('site:ppc:extruder:7-1', {json.dumps({"timestamp": "2000-01-01 00:35:00.000", "site": "ppc", "extruder": "7-1", "predicted": 0.8, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"}): ticks_00_35})
 #redisClient.zadd('site:ppc:extruder:7-1', {json.dumps({"timestamp": "2000-01-01 00:40:00.000", "site": "ppc", "extruder": "7-1", "predicted": 0.9, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"}): ticks_00_40})
 #redisClient.zadd('site:ppc:extruder:7-1', {json.dumps({"timestamp": "2000-01-01 00:45:00.000", "site": "ppc", "extruder": "7-1", "predicted": 1.0, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"}): ticks_00_45})
@@ -140,7 +91,12 @@ events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:35:
 events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:40:00.000", "site": "ppc", "extruder": "7-1", "predicted": 0.9, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0"))
 events.append(EventGridEvent(subject="PoC",data={"timestamp": "2000-01-01 00:45:00.000", "site": "ppc", "extruder": "7-1", "predicted": 1.0, "lcl": 0.0, "target": 0.5, "ucl": 1.0, "model": "7-1 Model", "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0"))
 eventGridClient.send(events)
+# Give the function app a second to catch up.
+time.sleep(2)
+# Get NEW last element by score.
 redisClient.zrevrangebyscore('site:ppc:extruder:7-1','+inf','-inf',start=0,num=1)
+
+# ============================================================================#
 
 # Remove elements from all sorted sets matching the site/extruder pattern with scores up through 00:30
 running_results = []
@@ -152,6 +108,11 @@ while cursor != 0:
 
 for key in set(running_results):
     redisClient.zremrangebyscore(key,0,ticks_00_30)
+
+# Get the remaining elements with their scores.
+redisClient.zrange('site:ppc:extruder:7-1',0,7,withscores=True)
+
+# ============================================================================#
 
 # Remove the entire set.
 redisClient.delete('site:ppc:extruder:7-1',1)
