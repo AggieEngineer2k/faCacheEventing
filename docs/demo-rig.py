@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import json
 import redis
 from textwrap import fill
-import time
+#import time
 from tkinter import *
 import tksheet
 
@@ -20,45 +20,56 @@ eventGridClient = EventGridPublisherClient(endpoint, credential)
 
 window = Tk()
 window.title("Cache Eventing Demo Rig")
-window.geometry('800x600+200+200')
 
-labelSite = Label(text="Site:")
-labelSite.grid(row=0, column=0, sticky="e")
-entrySite = Entry()
-entrySite.grid(row=0, column=1, sticky="w")
+entryFrame = Frame(window)
+entryFrame.grid(row=0, column=0, sticky="nswe")
+buttonFrame = Frame(window)
+buttonFrame.grid(row=0, column=1, sticky="nswe")
+textFrame = Frame(window)
+textFrame.grid(row=1, column=0, columnspan=2, sticky="nswe")
+sheetFrame = Frame(window)
+sheetFrame.grid(row=2, column=0, columnspan=2, sticky="nswe")
+
+labelSite = Label(entryFrame, text="Site:")
+labelSite.grid(row=0, column=0, sticky='e')
+entrySite = Entry(entryFrame)
 entrySite.insert(0, "ppc")
-labelExtruder = Label(text="Extruder:")
-labelExtruder.grid(row=1, column=0, sticky="e")
-entryExtruder = Entry()
-entryExtruder.grid(row=1, column=1, sticky="w")
+entrySite.grid(row=0, column=1)
+labelExtruder = Label(entryFrame, text="Extruder:")
+labelExtruder.grid(row=1, column=0, sticky='e')
+entryExtruder = Entry(entryFrame)
 entryExtruder.insert(0, "7-1")
-labelModel = Label(text="Model:")
-labelModel.grid(row=2, column=0, sticky="e")
-entryModel = Entry()
-entryModel.grid(row=2, column=1, sticky="w")
+entryExtruder.grid(row=1, column=1)
+labelModel = Label(entryFrame, text="Model:")
+labelModel.grid(row=2, column=0, sticky='e')
+entryModel = Entry(entryFrame)
 entryModel.insert(0, "7-1 Model")
-labelResinName = Label(text="Resin Name:")
-labelResinName.grid(row=3, column=0, sticky="e")
-entryResinName = Entry()
-entryResinName.grid(row=3, column=1, sticky="w")
+entryModel.grid(row=2, column=1)
+labelResinName = Label(entryFrame, text="Resin Name:")
+labelResinName.grid(row=3, column=0, sticky='e')
+entryResinName = Entry(entryFrame)
 entryResinName.insert(0, "HHM 5502BN")
+entryResinName.grid(row=3, column=1)
 
-text_box = Text(height=10, width=40)
-text_box.grid(row=4, column=0, columnspan=2, sticky="we")
-
-buttomFrame = Frame(window)
-buttomFrame.grid(row=0, column=2, rowspan=5, sticky="nswe")
-buttonFetchAll = Button(buttomFrame, text="Fetch All")
+buttonFetchAll = Button(buttonFrame, text="Fetch All")
 buttonFetchAll.pack(fill='x')
-buttonFetchLastTwoHours = Button(buttomFrame, text="Fetch Last Two Hours")
+buttonFetchLastTwoHours = Button(buttonFrame, text="Fetch Last Two Hours")
 buttonFetchLastTwoHours.pack(fill='x')
-buttonFetchLatest = Button(buttomFrame, text="Fetch Latest")
+buttonFetchLatest = Button(buttonFrame, text="Fetch Latest")
 buttonFetchLatest.pack(fill='x')
-buttonPublishEvent = Button(buttomFrame, text="Publish Event to Event Grid")
+buttonPublishEvent = Button(buttonFrame, text="Publish Event to Event Grid")
 buttonPublishEvent.pack(fill='x')
 
-sheet = tksheet.Sheet(window, width=700, height=400)
-sheet.grid(row=5, column=0, columnspan=3, sticky="nswe")
+text_box = Text(textFrame, height=10)
+text_box.pack(fill='x')
+
+def appendRedisStatistics():
+    info = redisClient.info()
+    text_box.insert(END, "--- Redis Info ---\n")
+    text_box.insert(END, "used_memory: {used_memory}\n".format(used_memory = info["used_memory"]))
+
+sheet = tksheet.Sheet(sheetFrame, width=800, height=400)
+sheet.pack()
 sheet.enable_bindings((
     "single_select",
     "row_select",
@@ -75,14 +86,20 @@ sheet.enable_bindings((
     "undo",
     "edit_cell"))
 
-def buttonFetchCallback(fromscore, toscore, top : int = None):
+def buttonFetchCallback(fromscore, toscore, reverse : bool = False, top : int = None):
     text_box.delete("1.0", END)
-    key = 'site:{site}:extruder:{extruder}'.format(site = entrySite.get(), extruder = entryExtruder.get())
-    if top is None:
-        text_box.insert(END, "ZRANGEBYSCORE\n")
+    key = 'site:{site}:extruder:{extruder}'.format(site=entrySite.get(),extruder=entryExtruder.get())
+    if reverse is False and top is None:
+        text_box.insert(END, "ZRANGEBYSCORE {key} {min} {max} WITHSCORES\n".format(key = key, min = fromscore, max = toscore))
         records = redisClient.zrangebyscore(key,fromscore,toscore,withscores=True)
-    else:
-        text_box.insert(END, "ZREVRANGEBYSCORE\n")
+    elif reverse is False and top is not None:
+        text_box.insert(END, "ZRANGEBYSCORE {key} {min} {max} WITHSCORES LIMIT 0 {count}\n".format(key = key, min = fromscore, max = toscore, count = top))
+        records = redisClient.zrangebyscore(key,fromscore,toscore,start=0,num=top,withscores=True)
+    elif reverse is True and top is None:
+        text_box.insert(END, "ZREVRANGEBYSCORE {key} -inf +inf WITHSCORES\n".format(key = key))
+        records = redisClient.zrevrangebyscore(key,'+inf','-inf',withscores=True)
+    elif reverse is True and top is not None:
+        text_box.insert(END, "ZREVRANGEBYSCORE {key} -inf +inf WITHSCORES LIMIT 0 {count}\n".format(key = key, count = top))
         records = redisClient.zrevrangebyscore(key,'+inf','-inf',start=0,num=top,withscores=True)
 
     sheet_data = []
@@ -98,8 +115,6 @@ def buttonFetchCallback(fromscore, toscore, top : int = None):
         "model",
         "resinName"])
     for record in records:
-        #score = record[1]
-        #dt = datetime(1,1,1) + timedelta(microseconds=score/10)
         memberJSON = json.loads(record[0])
         sheet_data.append([
             record[1],
@@ -117,10 +132,11 @@ def buttonFetchCallback(fromscore, toscore, top : int = None):
     sheet.set_all_cell_sizes_to_text()
 
     cardinality = redisClient.zcard('site:{site}:extruder:{extruder}'.format(site = entrySite.get(), extruder = entryExtruder.get()))
-    text_box.insert(END, "Sorted Set Cardinality: {cardinality}\n".format(cardinality = cardinality))
+    text_box.insert(END, "Results: {len_records} (of {cardinality})\n".format(len_records = len(records), cardinality = cardinality))
+    appendRedisStatistics()
 
 def buttonPublishEventCallback():
-    event = EventGridEvent(subject="PoC",data={
+    event = EventGridEvent(subject="PoC",event_type="Azure.Sdk.Demo",data_version="2.0",data={
         "timestamp": datetime.utcnow().isoformat(' '),
         "site": entrySite.get(), 
         "extruder": entryExtruder.get(), 
@@ -128,12 +144,12 @@ def buttonPublishEventCallback():
         "lcl": 0.0, 
         "target": 0.5, 
         "ucl": 1.0, 
-        "model": "7-1 Model", 
-        "resinName": "HHM 5502BN"},event_type="Azure.Sdk.Demo",data_version="2.0")
+        "model": entryModel.get(), 
+        "resinName": entryResinName.get()})
     eventGridClient.send(event)
 
 buttonFetchAll.configure(command=lambda: buttonFetchCallback('-inf', '+inf'))
-buttonFetchLatest.configure(command=lambda: buttonFetchCallback('-inf', '+inf', top = 1))
+buttonFetchLatest.configure(command=lambda: buttonFetchCallback('-inf', '+inf', top = 1, reverse = True))
 buttonFetchLastTwoHours.configure(command=lambda: buttonFetchCallback((datetime.utcnow() - timedelta(hours=2) - datetime(1,1,1)).total_seconds() * 10**7,'+inf'))
 buttonPublishEvent.configure(command=buttonPublishEventCallback)
 
