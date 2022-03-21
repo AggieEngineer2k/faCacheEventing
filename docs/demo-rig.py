@@ -61,6 +61,8 @@ buttonFetchLatest = Button(buttonFrame, text="Fetch Latest")
 buttonFetchLatest.pack(fill='x')
 buttonPublishEvent = Button(buttonFrame, text="Publish Event to Event Grid")
 buttonPublishEvent.pack(fill='x')
+buttonGetKeys = Button(buttonFrame, text="Get Sorted Set Keys")
+buttonGetKeys.pack(fill='x')
 
 img = PhotoImage(file='docs/Architecture.png')
 Label(
@@ -74,10 +76,11 @@ text_box.pack(fill='x')
 def appendRedisStatistics():
     info = redisClient.info()
     text_box.insert(END, "--- Redis Info ---\n")
-    for metric in ('redis_version',
-                   'used_memory_human',
-                   'used_memory_peak_human',
-                   'maxmemory_human'):
+    for metric in [
+        'redis_version',
+        'used_memory_human',
+        'used_memory_peak_human',
+        'maxmemory_human']:
         text_box.insert(END, "{metric}: {value}\n".format(metric = metric, value = info[metric]))
 
 sheet = tksheet.Sheet(sheetFrame, width=800, height=400)
@@ -108,10 +111,10 @@ def buttonFetchCallback(fromscore, toscore, reverse : bool = False, top : int = 
         text_box.insert(END, "ZRANGEBYSCORE {key} {min} {max} WITHSCORES LIMIT 0 {count}\n".format(key = key, min = fromscore, max = toscore, count = top))
         records = redisClient.zrangebyscore(key,fromscore,toscore,start=0,num=top,withscores=True)
     elif reverse is True and top is None:
-        text_box.insert(END, "ZREVRANGEBYSCORE {key} -inf +inf WITHSCORES\n".format(key = key))
+        text_box.insert(END, "ZREVRANGEBYSCORE {key} +inf -inf WITHSCORES\n".format(key = key))
         records = redisClient.zrevrangebyscore(key,'+inf','-inf',withscores=True)
     elif reverse is True and top is not None:
-        text_box.insert(END, "ZREVRANGEBYSCORE {key} -inf +inf WITHSCORES LIMIT 0 {count}\n".format(key = key, count = top))
+        text_box.insert(END, "ZREVRANGEBYSCORE {key} +inf -inf WITHSCORES LIMIT 0 {count}\n".format(key = key, count = top))
         records = redisClient.zrevrangebyscore(key,'+inf','-inf',start=0,num=top,withscores=True)
 
     sheet_data = []
@@ -160,9 +163,27 @@ def buttonPublishEventCallback():
         "resinName": entryResinName.get()})
     eventGridClient.send(event)
 
+def buttonGetKeysCallback():
+    text_box.delete("1.0", END)
+    text_box.insert(END, 'SCAN 0 MATCH site:*:extruder:*\n')
+    sheet_data = []
+    sheet_data.append([
+        "key",
+        "cardinality"])
+    for key in redisClient.scan_iter('site:*:extruder:*'):
+        cardinality = redisClient.zcard(key)
+        sheet_data.append([
+            key,
+            cardinality])
+
+    sheet.set_sheet_data(sheet_data)
+    sheet.set_all_cell_sizes_to_text()
+    appendRedisStatistics()
+
 buttonFetchAll.configure(command=lambda: buttonFetchCallback('-inf', '+inf'))
 buttonFetchLatest.configure(command=lambda: buttonFetchCallback('-inf', '+inf', top = 1, reverse = True))
 buttonFetchLastTwoHours.configure(command=lambda: buttonFetchCallback((datetime.utcnow() - timedelta(hours=2) - datetime(1,1,1)).total_seconds() * 10**7,'+inf'))
 buttonPublishEvent.configure(command=buttonPublishEventCallback)
+buttonGetKeys.configure(command=buttonGetKeysCallback)
 
 window.mainloop()
