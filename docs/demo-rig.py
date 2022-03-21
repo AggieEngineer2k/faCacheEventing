@@ -25,10 +25,12 @@ entryFrame = Frame(window)
 entryFrame.grid(row=0, column=0, sticky="nswe")
 buttonFrame = Frame(window)
 buttonFrame.grid(row=0, column=1, sticky="nswe")
+imageFrame = Frame(window)
+imageFrame.grid(row=0, column=2, sticky="nswe")
 textFrame = Frame(window)
-textFrame.grid(row=1, column=0, columnspan=2, sticky="nswe")
+textFrame.grid(row=1, column=0, columnspan=3, sticky="nswe")
 sheetFrame = Frame(window)
-sheetFrame.grid(row=2, column=0, columnspan=2, sticky="nswe")
+sheetFrame.grid(row=2, column=0, columnspan=3, sticky="nswe")
 
 labelSite = Label(entryFrame, text="Site:")
 labelSite.grid(row=0, column=0, sticky='e')
@@ -60,13 +62,23 @@ buttonFetchLatest.pack(fill='x')
 buttonPublishEvent = Button(buttonFrame, text="Publish Event to Event Grid")
 buttonPublishEvent.pack(fill='x')
 
+img = PhotoImage(file='docs/Architecture.png')
+Label(
+    imageFrame,
+    image=img
+).pack()
+
 text_box = Text(textFrame, height=10)
 text_box.pack(fill='x')
 
 def appendRedisStatistics():
     info = redisClient.info()
     text_box.insert(END, "--- Redis Info ---\n")
-    text_box.insert(END, "used_memory: {used_memory}\n".format(used_memory = info["used_memory"]))
+    for metric in ('redis_version',
+                   'used_memory_human',
+                   'used_memory_peak_human',
+                   'maxmemory_human'):
+        text_box.insert(END, "{metric}: {value}\n".format(metric = metric, value = info[metric]))
 
 sheet = tksheet.Sheet(sheetFrame, width=800, height=400)
 sheet.pack()
