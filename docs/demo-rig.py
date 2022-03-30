@@ -54,8 +54,8 @@ entryToDateTime = Entry(entryFrame)
 entryToDateTime.insert(0, datetime.utcnow().isoformat(' '))
 entryToDateTime.grid(row=5, column=1)
 
-buttonGetKeys = Button(buttonFrame, text="Get Sorted Set Keys")
-buttonGetKeys.pack(fill='x')
+buttonFetchKeys = Button(buttonFrame, text="Fetch Sorted Set Keys")
+buttonFetchKeys.pack(fill='x')
 buttonFetchAll = Button(buttonFrame, text="Fetch All")
 buttonFetchAll.pack(fill='x')
 buttonFetchCustomDateTimeRange = Button(buttonFrame, text="Fetch From/To")
@@ -184,7 +184,7 @@ def buttonPublishEventCallback():
         "resinName": entryResinName.get()})
     eventGridClient.send(event)
 
-def buttonGetKeysCallback():
+def buttonFetchKeysCallback():
     text_box.delete("1.0", END)
     text_box.insert(END, 'SCAN 0 MATCH site:*:extruder:*\n')
     sheet_data = []
@@ -206,13 +206,20 @@ def buttonGetKeysCallback():
     sheet.set_all_cell_sizes_to_text()
     appendRedisStatistics()
 
+def getTicksForDatetime(input: datetime):
+    return (input - datetime(1,1,1)).total_seconds() * 10**7
+def getTicksForTimestamp(input: str):
+    return (datetime.strptime(input, '%Y-%m-%d %H:%M:%S.%f') - datetime(1,1,1)).total_seconds() * 10**7
+
 buttonFetchAll.configure(command=lambda: buttonFetchCallback('-inf', '+inf'))
 buttonFetchLatest.configure(command=lambda: buttonFetchCallback('-inf', '+inf', top = 1, reverse = True))
-buttonFetchLastTwoHours.configure(command=lambda: buttonFetchCallback((datetime.utcnow() - timedelta(hours=2) - datetime(1,1,1)).total_seconds() * 10**7,'+inf'))
+buttonFetchLastTwoHours.configure(command=lambda: buttonFetchCallback(
+    getTicksForDatetime(datetime.utcnow() - timedelta(hours=2)),
+    '+inf'))
 buttonPublishEvent.configure(command=buttonPublishEventCallback)
-buttonGetKeys.configure(command=buttonGetKeysCallback)
+buttonFetchKeys.configure(command=buttonFetchKeysCallback)
 buttonFetchCustomDateTimeRange.configure(command=lambda: buttonFetchCallback(
-    (datetime.strptime(entryFromDateTime.get(), '%Y-%m-%d %H:%M:%S.%f') - datetime(1,1,1)).total_seconds() * 10**7,
-    (datetime.strptime(entryToDateTime.get(), '%Y-%m-%d %H:%M:%S.%f') - datetime(1,1,1)).total_seconds() * 10**7))
+    getTicksForTimestamp(entryFromDateTime.get()),
+    getTicksForTimestamp(entryToDateTime.get())))
 
 window.mainloop()
